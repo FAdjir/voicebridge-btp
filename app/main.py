@@ -79,7 +79,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # 4. Sauvegarde Google Sheets (Mémoire)
         # On l'exécute aussi dans le thread pour ne pas ralentir le bot
-        saved = await loop.run_in_executor(None, save_intervention, data_dict)
+        saved = await loop.run_in_executor(None, save_intervention, data_dict, user.first_name)
         
         # 5. Réponse à l'utilisateur
         pretty_message = format_for_human(data_dict)
