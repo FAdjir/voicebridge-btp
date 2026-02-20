@@ -109,5 +109,21 @@ if __name__ == '__main__':
     app = ApplicationBuilder().token(settings.TELEGRAM_TOKEN).build()
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     
-    logger.info("🚀 VoiceBridge est en ligne !")
-    app.run_polling()
+    # --- NOUVELLE LOGIQUE DE DÉMARRAGE (Webhook vs Polling) ---
+    
+    # Render injecte automatiquement ces variables dans le Cloud
+    PORT = int(os.environ.get("PORT", "10000"))
+    RENDER_URL = os.environ.get("RENDER_EXTERNAL_URL")
+
+    if RENDER_URL:
+        # Mode Cloud (Render) : On ouvre le port web pour Telegram
+        logger.info(f"🌐 Démarrage en mode Webhook sur {RENDER_URL}")
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            webhook_url=RENDER_URL
+        )
+    else:
+        # Mode Local (Ton PC) : On garde l'ancienne méthode
+        logger.info("💻 Démarrage en mode Polling (Local)")
+        app.run_polling()
