@@ -2,6 +2,8 @@ import gspread
 from gspread.exceptions import WorksheetNotFound # <-- NOUVEL IMPORT IMPORTANT
 import datetime
 import logging
+import io
+import csv
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -55,4 +57,33 @@ def save_intervention(json_data, artisan_name="Inconnu"):
         return True
     except Exception as e:
         logger.error(f"❌ Erreur Google Sheets : {e}")
+        return False
+    
+def export_artisan_data(artisan_name):
+    """Récupère les données d'un artisan et génère un CSV"""
+    try:
+        sh = gc.open(settings.SHEET_NAME)
+        
+        # 1. On cherche l'onglet
+        try:
+            worksheet = sh.worksheet(artisan_name)
+        except WorksheetNotFound:
+            return None # L'onglet n'existe pas encore
+            
+        # 2. On récupère TOUTES les données du tableau
+        data = worksheet.get_all_values()
+        
+        if not data or len(data) <= 1:
+            return None # Le tableau est vide (ou n'a que la ligne d'en-tête)
+            
+        # 3. On crée le fichier CSV en mémoire (sans le sauvegarder sur le disque dur)
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerows(data)
+        
+        logger.info(f"📤 Données exportées pour {artisan_name}")
+        return output.getvalue()
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de l'export pour {artisan_name} : {e}")
         return False

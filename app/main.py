@@ -5,12 +5,12 @@ import logging
 import asyncio
 from telegram import Update
 from telegram.constants import ParseMode
-from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters, CommandHandler
 
 from app.config import settings
 # Nos modules maison
 from app.services.brain import analyze_audio
-from app.services.database import save_intervention
+from app.services.database import save_intervention, export_artisan_data
 
 logger = logging.getLogger("VoiceBridge")
 
@@ -98,6 +98,38 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"❌ Erreur critique : {e}")
         await update.message.reply_text("❌ Oups, je n'ai pas compris cet audio.")
 
+async def handle_export(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    logger.info(f"📊 Demande d'export reçue de {user.first_name}")
+
+    # On fait patienter l'utilisateur
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="upload_document")
+    await update.message.reply_text("📊 Je prépare ton fichier de comptabilité, un instant...")
+
+    try:
+        # On va chercher les données dans Google Sheets
+        loop = asyncio.get_running_loop()
+        csv_data = await loop.run_in_executor(None, export_artisan_data, user.first_name)
+
+        if csv_data is None:
+            await update.message.reply_text("🤷‍♂️ Je n'ai trouvé aucune donnée pour toi. Fais ta première intervention vocalement !")
+        elif csv_data is False:
+            await update.message.reply_text("❌ Oups, un problème technique m'empêche de lire tes données.")
+        else:
+            # On transforme le texte en un "vrai" fichier téléchargeable
+            file_bytes = csv_data.encode('utf-8-sig') # le "-sig" aide Excel à bien lire les accents (é, à)
+            
+            # On envoie le document !
+            await update.message.reply_document(
+                document=file_bytes,
+                filename=f"Compta_{user.first_name}.csv",
+                caption="✅ Et voilà ! Voici ton fichier prêt à être envoyé à ton comptable."
+            )
+
+    except Exception as e:
+        logger.error(f"Erreur d'export : {e}")
+        await update.message.reply_text("❌ Erreur inattendue.")
+
 if __name__ == '__main__':
     # Vérification initiale
     try:
@@ -108,6 +140,7 @@ if __name__ == '__main__':
         
     app = ApplicationBuilder().token(settings.TELEGRAM_TOKEN).build()
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
+    app.add_handler(CommandHandler("export", handle_export))
     
     # --- NOUVELLE LOGIQUE DE DÉMARRAGE (Webhook vs Polling) ---
     
