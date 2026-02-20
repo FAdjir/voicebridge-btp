@@ -130,6 +130,24 @@ async def handle_export(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Erreur d'export : {e}")
         await update.message.reply_text("❌ Erreur inattendue.")
 
+async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    logger.info(f"🚀 Nouvel utilisateur démarré : {user.first_name}")
+
+    welcome_message = (
+        f"Salut {user.first_name} et bienvenue sur VoiceBridge BTP (Version Bêta) ! 🏗️\n\n"
+        "Je suis ton assistant vocal. Dicte-moi tes fins de chantier, et je prépare ta facturation.\n\n"
+        "🎙️ *Comment ça marche ?*\n"
+        "1. Envoie un vocal : *\"Chantier Dupont terminé, j'ai passé 2h et posé un siphon.\"*\n"
+        "2. Je trie le matériel et la main-d'œuvre.\n"
+        "3. Tape /export le vendredi pour récupérer ton tableau Excel.\n\n"
+        "⚠️ *CONDITIONS D'UTILISATION (BÊTA) :*\n"
+        "_Cet outil est actuellement en phase de test gratuit. En l'utilisant, tu acceptes que tes données (via Telegram et Google) soient traitées pour générer ta comptabilité. Cet outil est une aide : la vérification finale de tes factures et devis reste sous ton entière responsabilité. Aucune réclamation ne pourra être faite en cas d'erreur de l'IA ou de perte de données._\n\n"
+        "👉 *Envoie ton premier vocal pour commencer !*"
+    )
+
+    await update.message.reply_text(welcome_message, parse_mode=ParseMode.MARKDOWN)
+
 if __name__ == '__main__':
     # Vérification initiale
     try:
@@ -139,6 +157,7 @@ if __name__ == '__main__':
         exit(1)
         
     app = ApplicationBuilder().token(settings.TELEGRAM_TOKEN).build()
+    app.add_handler(CommandHandler("start", handle_start))
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(CommandHandler("export", handle_export))
     
