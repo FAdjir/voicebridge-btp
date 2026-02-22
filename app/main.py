@@ -78,6 +78,15 @@ def format_for_human(data):
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    
+    # --- NOUVEAU : LE VIDEUR CHRONOMÈTRE ---
+    duree = update.message.voice.duration
+    if duree < 4: # Si le vocal fait moins de 4 secondes
+        logger.info(f"🚫 Vocal ignoré car trop court ({duree}s) de {user.first_name}")
+        await update.message.reply_text("⏱️ Ce message vocal est très court. J'en déduis que c'est un clic par erreur ! (Recommence si ce n'est pas le cas).")
+        return # On arrête tout ici, on ne contacte même pas Gemini.
+    # ---------------------------------------
+
     logger.info(f"🎤 Note vocale reçue de {user.first_name}")
 
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
