@@ -60,6 +60,11 @@ def save_intervention(json_data, artisan_name="Inconnu"):
             date_prevue = rem.get("due_date", "bientôt")
             if tache:
                 reminder_text += f"- {tache} (Pour: {date_prevue})\n"
+
+        # --- SÉCURITÉ ANTI-DOUBLON (LIGNES VIDES) ---
+        if not billing_text.strip() and not reminder_text.strip():
+            logger.info("🚫 Ligne vide détectée (probablement un doublon Telegram), annulation de la sauvegarde.")
+            return True
             
         # Ajout de la ligne dans LE BON ONGLET
         worksheet.append_row([
