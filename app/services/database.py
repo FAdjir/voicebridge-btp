@@ -38,11 +38,28 @@ def save_intervention(json_data, artisan_name="Inconnu"):
         
         billing_text = ""
         for item in inter.get("billing_items", []):
-            billing_text += f"- {item.get('item', '')} ({item.get('type', '')})\n"
+            nom = item.get("item", "")
+            type_item = item.get("type", "")
+            quantite = item.get("quantity", "") # On récupère enfin la quantité !
+            
+            # Si on a une quantité, on l'affiche, sinon on met juste le nom
+            if quantite:
+                billing_text += f"- {nom} : {quantite} ({type_item})\n"
+            else:
+                billing_text += f"- {nom} ({type_item})\n"
+
+        reminders_list = json_data.get("reminders", [])
+        
+        # Rétrocompatibilité au cas où l'IA utilise encore l'ancien mot "reminder"
+        if "reminder" in json_data and isinstance(json_data["reminder"], dict):
+            reminders_list.append(json_data["reminder"])
             
         reminder_text = ""
-        if remind and remind.get("task"):
-            reminder_text = f"{remind.get('task')} (Pour: {remind.get('due_date', 'bientôt')})"
+        for rem in reminders_list:
+            tache = rem.get("task", "")
+            date_prevue = rem.get("due_date", "bientôt")
+            if tache:
+                reminder_text += f"- {tache} (Pour: {date_prevue})\n"
             
         # Ajout de la ligne dans LE BON ONGLET
         worksheet.append_row([

@@ -24,6 +24,7 @@ RÈGLES CRITIQUES DE VOCABULAIRE :
    - "Paire" -> "PER" (Tuyau)
    - "Multi-couches" -> "Multicouche"
 3. Si un mot est ambigu, privilégie le contexte technique (ex: "Joint" est un joint d'étanchéité, pas autre chose).
+4. S'il n'y a pas de rappel, renvoie une liste vide []. S'il y en a plusieurs, ajoute-les tous à la liste.
 
 FORMAT DE SORTIE (JSON STRICT) :
 {
@@ -31,14 +32,21 @@ FORMAT DE SORTIE (JSON STRICT) :
     "client": "Nom du client (Format: Nom Prénom ou M./Mme Nom)",
     "status": "Terminé ou En cours",
     "billing_items": [
-      {"item": "Nom précis de l'article (Corrigé)", "type": "Matériel ou Main d'oeuvre", "note": "Détails (Quantité, Dimensions...)"}
+      {
+        "item": "Nom précis de l'article (Corrigé)", 
+        "type": "Matériel ou Main d'oeuvre ou Forfait", 
+        "quantity": "Quantité précise (ex: 3 mètres, 2 heures, 1 unité)", 
+        "note": "Autres détails éventuels (Dimensions, couleur...)"
+      }
     ]
   },
-  "reminder": {
-    "task": "Action à réaliser (Verbe à l'infinitif)",
-    "due_date": "Date ou moment"
-  },
-  "audio_quality_score": 0.0 à 1.0
+  "reminders": [
+    {
+      "task": "Action à réaliser (Verbe à l'infinitif)",
+      "due_date": "Date ou moment"
+    }
+  ],
+  "audio_quality_score": 0.9
 }
 """
 

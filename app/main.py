@@ -17,11 +17,10 @@ logger = logging.getLogger("VoiceBridge")
 def format_for_human(data):
     """
     Transforme les données (Dictionnaire Python) en message lisible.
-    NOTE: Cette version prend un DICTIONNAIRE en entrée, plus du texte brut.
+    NOTE: Gère désormais les quantités et de multiples rappels.
     """
     try:
         inter = data.get("intervention", {})
-        remind = data.get("reminder", {})
         
         # 1. En-tête
         msg = f"✅ <b>Intervention : {inter.get('client', 'Inconnu')}</b>\n"
@@ -40,16 +39,38 @@ def format_for_human(data):
             elif "Forfait" in item.get("type", ""):
                 icon = "🚗"
                 
-            msg += f"{icon} {item.get('item')}"
-            if item.get("note"):
-                msg += f" ({item.get('note')})"
+            nom = item.get("item", "")
+            quantite = item.get("quantity", "")
+            note = item.get("note", "")
+            
+            # Construction de la ligne avec la quantité si elle existe
+            if quantite:
+                msg += f"{icon} {nom} : {quantite}"
+            else:
+                msg += f"{icon} {nom}"
+                
+            # Ajout de la note si elle existe
+            if note:
+                msg += f" ({note})"
             msg += "\n"
+                
+        # 3. Rappels (MODIFICATION ICI : Gestion Multipe)
+        reminders_list = data.get("reminders", [])
+        
+        # Sécurité (Rétrocompatibilité) : Si Gemini génère encore l'ancien mot "reminder"
+        old_remind = data.get("reminder", {})
+        if old_remind and isinstance(old_remind, dict) and old_remind.get("task"):
+            reminders_list.append(old_remind)
             
-        # 3. Rappel
-        if remind and remind.get("task"):
-            msg += f"\n⏰ <b>Rappel ({remind.get('due_date', 'bientôt')}) :</b>\n"
-            msg += f"👉 {remind.get('task')}\n"
-            
+        # S'il y a au moins un rappel dans la liste, on les affiche tous
+        if reminders_list:
+            msg += "\n⏰ <b>Rappels :</b>\n"
+            for rem in reminders_list:
+                tache = rem.get("task", "")
+                date_prevue = rem.get("due_date", "bientôt")
+                if tache:
+                    msg += f"👉 {tache} (Pour: {date_prevue})\n"
+                
         return msg
 
     except Exception as e:
