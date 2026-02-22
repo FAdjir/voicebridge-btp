@@ -98,6 +98,18 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         clean_json = json_text.replace("```json", "").replace("```", "").strip()
         data_dict = json.loads(clean_json)
 
+        # --- NOUVEAU : SÉCURITÉ ANTI-MAUVAIS CLIC (AUDIO VIDE) ---
+        inter = data_dict.get("intervention", {})
+        client = inter.get("client", "")
+        items = inter.get("billing_items", [])
+        reminders = data_dict.get("reminders", [])
+        
+        # Si absolument tout est vide (ou si le client est "Inconnu" avec 0 facture et 0 rappel)
+        if (not client or client == "Inconnu" or client == "None") and not items and not reminders:
+            await update.message.reply_text("🤔 Je n'ai détecté aucune information. L'enregistrement était peut-être trop court ou vide. Peux-tu recommencer ?")
+            return # Le "return" arrête la fonction ici ! Le bot ne sauvegardera rien et n'enverra pas le faux message de succès.
+        # ---------------------------------------------------------
+
         # 4. Sauvegarde Google Sheets (Mémoire)
         # On l'exécute aussi dans le thread pour ne pas ralentir le bot
         saved = await loop.run_in_executor(None, save_intervention, data_dict, user.first_name)
