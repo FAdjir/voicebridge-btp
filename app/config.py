@@ -13,6 +13,10 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
+# --- LE SILENCIEUX POUR HTTPX ---
+# On coupe le micro de la bibliothèque interne de Telegram pour cacher le token
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 class Config:
     # On vérifie les clés critiques
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
